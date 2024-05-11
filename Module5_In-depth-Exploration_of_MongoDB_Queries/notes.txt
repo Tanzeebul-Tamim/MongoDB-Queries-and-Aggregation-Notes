@@ -1,0 +1,318 @@
+"MONGODB QUERIES"
+Notes are enclosed within a first bracket after the queries
+
+1. db.test.find({ gender: "Male" }).project({ name: 1, gender: 1, email: 1 })
+(It is called fill filtering)
+(We can specify which fields to show in the result with .project(), field value set to 1 means it will be shown)
+
+db.test.findOne({ gender: "Male" }, { name: 1, gender: 1, email: 1 })
+(It is also called fill filtering (this one's for findOne method, because .project() doesn't work with findOne))
+
+2. Very important, Thumb Rule: whenever you take an operator we enclose it within a second bracket
+
+3. db.test.find({ age: { $gte: 18, $lte: 30 } }, { name: 1, age: 1 }).sort({ age: 1 })
+(merging two conditions with comma is called "implicit AND")
+(.sort() is used to sort the result based on a specific field, set the field value to 1 for ascending order and to -1 for descending order)
+
+4. db.test.find({ $or: [{ "skills.name": "JAVASCRIPT" }, { "skills.name": "PYTHON" }] }).project({ "skills.name": 1 })
+(Explicit OR)
+
+5. db.test.find({ age: { $exists: false } })
+(will show the documents that don't have age as a field)
+
+6. db.test.find({ age: { $type: "number" } })
+(checks if there're any document which has a numeric value assigned in "age" field)
+
+7. db.test.find(
+    {age: { $nin: [18, 20, 22, 24, 26, 28, 30] }, (finds the ages excluding the specified values in the $nin array)
+    gender: "Female",
+    interests: { $in: ["Cooking", "Gaming"] } }, (finds the interests that matches at least one value in the $in array)
+    { name: 1, age: 1, gender: 1, interests: 1 } (fill filtering)
+)
+    .sort({ age: 1 }) (sorting)
+($in finds all the documents with at least one of the values that are specified in the $in array for a specific field)
+($in can also be called "implicit OR")
+($nin finds all the documents except for the ones that don't have the values specified in the $nin array for a specific field)
+(finds all the documents which's age is not 18, 20, 22, 24, 26, 28 and 30, gender is Female and has at least one interest which is either Cooking or Gaming)
+
+9. db.test.find({ age: { $ne: 15, $lte: 30 } })
+(finds all the documents with the value of the field age not equals to 15 and less than or equals to 30)
+
+10. db.test.find(
+    { $and: [
+        { age: { $ne: 15 } },
+        { age: { $lte: 30 } },
+        { gender: "Female" }
+    ] }
+)
+    .project({ age: 1, gender: 1 })
+    .sort({ age: -1 })
+(explicit AND)    
+
+11. Explicit and Implicit OR, AND:
+
+Explicit AND:
+db.test.find({ $and: [{ interests: "Traveling" }, { interests: "Cooking" }] }).project({ interests: 1 })
+db.test.find({ $and: [{ interests: "Traveling" }, { interests: "Cooking" }] }).project({ interests: 1 })
+
+Implicit AND:
+db.test.find({ age: { $gte: 18, $lte: 30 } }, { name: 1, age: 1 }).sort({ age: 1 })
+
+Explicit OR:
+db.test.find({ $or: [{ "skills.name": "JAVASCRIPT" }, { "skills.name": "PYTHON" }] }).project({ "skills.name": 1 })
+
+
+Implicit OR:
+db.test.find({ "skills.name": { $in: ["JAVASCRIPT", "PYTHON"] } }).project({ name: 1, skills: 1 })
+
+12. db.test.find({ friends: { $size: 3 } }).project({ name: 1, friends: 1 })
+($size is used to perform queries based on the length of an array)
+(finds all the documents with friends field consisting of 3 elements)
+
+13. db.test.find({ company: { $type: "null" } }).project({ name: 1, company: 1 })
+(finds all the documents with company field set to null)
+
+14. db.test.find({ "interests.2": "Cooking" }).project({interests: 1})
+(finds all the documents that has "Cooking" in the 3rd element of "interests" field)
+
+15. db.test.find({ interests: { $all: ["Traveling", "Gaming", "Reading"] } }).project({ interests: 1 })
+(if $all wasn't used in this scenario, it'd have looked for all the documents that match this exact array (elements are sequence sensitive) ["Traveling", "Gaming", "Reading"] set to "interests" field.)
+($all looks for the specified elements within the specified field (must be an array) regardless of their position/indexing in the array)
+
+16. db.test.find({ "skills.name": "JAVASCRIPT" }).project({ skills: 1 })
+(perform queries on nested objects)
+
+17. db.test.find({ skills: { $elemMatch: { name: "JAVASCRIPT", level: "Intermediate" } } }).project({ name: 1, skills: 1 })
+(if $elemMatch wasn't used in this scenario, it'd have looked for all the documents that match this exact object (properties are sequence sensitive) { name: "JAVASCRIPT", level: "Intermediate" } set to "skills" field.)
+($elemMatch is almost same as $all, but used when working with objects. It looks for the specified properties with the specified values within the specified field(must be an object) regardless of their position in the object)
+
+18. db.test.findOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") })
+(finding using ObjectId)
+
+19. db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $set: { age: 40 } })
+($set is suitable for primitive values, not for non primitive ones. Because it mutates the non primitive values. So you shouldn't use $set for non primitive fields unless you want to replace the whole value for the field, but you can use it for objects if you specify the path explicitly so that the whole object doesn't get mutated)
+
+db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $set: { isMarried: true } })
+
+21. db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $addToSet: { interests: "Coding" } })
+($addToSet is suitable for updating array by adding new elements into the existing array without replacing the whole array. $addToSet rejects duplicate entires)
+
+22. db.test.updateOne(
+    { _id: ObjectId("6406ad65fc13ae5a400000c7") },
+    {
+        $addToSet: { 
+            interests: {
+                $each: ["Rubik's Cube", "Graphics Designing"]
+            }
+        }
+    }
+)
+($each adds all the specified elements one by one within the array, whereas if we used $addToSet like this, it'd have added the whole array into the array as a single element, so it's useful when you need to add multiple elements into an array at once. $each has to be used along with $addToSet)
+
+23. db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $push: { interests: "Coding" } })
+($push doesn't care about duplicate entries, it will just push the specified values into the array as it's last element)
+
+24. db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $unset: { birthday: "" } })
+($unset removes a field from a document. Works this way as well { $unset: { birthday: 1 } })
+
+25. db.test.updateOne({ _id: ObjectId("6406ad65fc13ae5a400000c7") }, { $pop: { friends: -1 } })
+($pop removes the last element from an array, you can also remove the first element by specifying the value to -1 and specify the value to 1 to remove the last element)
+
+26. db.test.updateOne({_id: ObjectId("6406ad65fc13ae5a400000c7")},{$pull:{languages: "Lao"}})
+($pull is also used to remove elements from an array, but you can specify the exact element)
+
+db.test.updateOne(
+    { email: "vkardosstowez@freewebs.com" },
+    { $pull: { skills: { name: "Python" } } }
+)
+($pull for nested objects)
+
+27. db.test.updateOne(
+    { _id: ObjectId("6406ad65fc13ae5a400000c7") },
+    { $pullAll: { friends: ["Najmus Sakib", "Rasel Ahmed"] } }
+)
+(same as $pull, used when you need to pull multiple elements at once)
+
+
+28. Positional Operators ($)
+----------------------------------------------------------------------------------------------------------------------------
+
+In MongoDB, the positional operator ($) is used to update or query elements within arrays. It allows you to update/query a specific element within an array based on its position without knowing the exact index. Here's how it works with examples:
+
+28.1. Updating Elements in an Array:
+Suppose you have a collection called users with documents structured like this:
+
+{
+  "_id": 1,
+  "name": "John",
+  "favorites": ["apple", "banana", "cherry"]
+}
+
+Let's say you want to update the second element of the favorites array from "banana" to "grape". You can use the positional operator like this:
+
+db.users.updateOne(
+  { "_id": 1, "favorites": "banana" },
+  { "$set": { "favorites.$": "grape" } }
+)
+
+This query will find the document with _id equal to 1 and whose favorites array contains "banana", then it will update that element to "grape".
+
+28.2. Querying Elements in an Array:
+Similarly, you can use the positional operator in queries to find documents based on conditions within arrays. For instance, let's say you want to find all users who have "apple" as their first favorite:
+
+db.users.find({ "favorites.0": "apple" })
+
+This query will return all documents where "apple" is the first element in the favorites array.
+
+28.3. Updating Nested Arrays:
+If you have nested arrays, you can still use the positional operator to update elements. For example:
+
+{
+  "_id": 1,
+  "name": "John",
+  "orders": [
+    { "items": ["apple", "banana"] },
+    { "items": ["cherry", "grape"] }
+  ]
+}
+
+Let's say you want to update the second element of the items array within the first order to "orange". You can do this:
+
+db.users.updateOne(
+  { "_id": 1, "orders.items": "banana" },
+  { "$set": { "orders.$.items.1": "orange" } }
+)
+
+This query will find the document with _id equal to 1 where the orders array contains an order with "banana" in its items, and then it will update the second element of that items array to "orange".
+
+These examples illustrate how the positional operator ($) can be used in MongoDB to update or query elements within arrays based on their position.
+
+Another example for this document where I want to update the name of the second skill:
+
+{
+	"_id" : ObjectId("6406ad63fc13ae5a40000065"),
+	"name" : {
+		"firstName" : "Mariele",
+		"lastName" : "Dangl"
+	},
+	"email" : "mdangl1@odnoklassniki.ru",
+	"phone" : "(167) 7775715",
+	"gender" : "Female",
+	"age" : 21,
+	"address" : {
+		"street" : "1188 Lerdahl Point",
+		"city" : "Dongxi",
+		"country" : "China"
+	},
+	"company" : "Skipfire",
+	"favoutiteColor" : "Aquamarine",
+	"friends" : [ "Najmus Sakib", "Mir Hussain", "Fahim Ahammed Firoz", "Tanmoy Parvez", "Abdur Rakib" ],
+	"occupation" : "Food Chemist",
+	"interests" : [ "Cooking", "Writing", "Reading" ],
+	"skills" : [
+		{
+			"name" : "JAVASCRIPT",
+			"level" : "Expert",
+			"isLearning" : false
+		},
+		{
+			"name" : "PYTHON",
+			"level" : "Expert",
+			"isLearning" : true
+		},
+		{
+			"name" : "PYTHON",
+			"level" : "Beginner",
+			"isLearning" : false
+		},
+		{
+			"name" : "GO",
+			"level" : "Expert",
+			"isLearning" : true
+		},
+		{
+			"name" : "GO",
+			"level" : "Beginner",
+			"isLearning" : true
+		}
+	],
+	"education" : [
+		{
+			"degree" : "Doctor of Philosophy",
+			"major" : "Art",
+			"institute" : "Technische Universität Dresden",
+			"year" : 2003
+		},
+		{
+			"degree" : "Master of Science",
+			"major" : "Communications",
+			"institute" : "West Liberty State College",
+			"year" : 2011
+		}
+	],
+	"languages" : [ "German", "Catalan", "Thai" ],
+	"ipAddress" : "206.108.151.156",
+	"salary" : 363
+}
+
+updating the name of the second skill:
+
+db.test.updateOne(
+    { _id: ObjectId("6406ad63fc13ae5a40000065"), "skills.1.name": "C#" },
+    { $set: { "skills.1.name": "PYTHON" } }
+)
+
+(If you don't specify the index of the skill you want to update, it'll update the first element of the "skills" array that matches the name property for the value "C#". And the query will look like this { _id: ObjectId("6406ad63fc13ae5a40000065"), "skills.name": "C#" })
+
+Examples:
+
+1. db.test.updateOne(
+    {
+        _id: ObjectId("6406ad63fc13ae5a40000067"),
+        "education.major": "Biology"
+    },
+    {
+        $set: { "education.$.major": "CSE" }
+    }
+)
+(finds the document with the specific ObjectId. Then it looks for the first element within the "education" array which has "Biology" in the "major" field. Then it updates that element of the "education" array with the new value "CSE" for the field "major")
+
+2. db.test.updateOne(
+    {
+        _id: ObjectId("6406ad63fc13ae5a40000065"),
+        "education.degree": "Doctor of Philosophy"
+    },
+    {
+        $set: { "education.$.major": "Philosophy Marianna" }
+    }
+)
+(finds the document with the specific ObjectId. Then it looks for the first element within the "education" array which has "Doctor of Philosophy" in the "degree" field. Then it updates that element of the "education" array with the new value "Philosophy Marianna" for the field "major")
+
+3. db.test.updateOne(
+    { _id: ObjectId("6406ad63fc13ae5a40000065"), "skills.3.name": "C#" },
+    { $set: { "skills.3.name": "PYTHON" } }
+)
+(finds the document with the specific ObjectId. Then it looks for the 4th element (index 3) within the "skills" array which has "C#" in the "name" field. Then it updates that 4th (index 3) element of the "skills" array with the new value "PYTHON" for the field "name")
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+29. db.test.updateOne(
+    { _id: ObjectId("6406ad63fc13ae5a40000065") },
+    { $inc: { age: 1 } }
+)
+($inc is increment operator and it can be used to increment the value of field that contains data of numeric type. You can specify the amount of how much you want to increment)
+
+30. db.test.deleteOne({ _id: ObjectId("6406ad63fc13ae5a40000065") })
+(deleting one specific document)
+
+31. db.test.deleteMany( { "company" : "Shuffletag", "age" : { $lte : 20 } } )
+(deleting multiple documents at once)
+
+32. db.createCollection("posts")
+(creating a new collection)
+
+33. db.posts.insertOne({ test: "I am testing" })
+(inserting a document into a collection)
+
+34. db.posts.drop({ writeConcern: { w: 1 } })
+(dropping (deleting) a collection)
