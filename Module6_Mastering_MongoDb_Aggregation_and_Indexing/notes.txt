@@ -1,0 +1,257 @@
+"MONGODB AGGREGATION"
+
+How MongoDb aggregation pipeline works:
+input -> $match -> $group -> $sort -> output
+
+Try to keep as less stages as possible, to reduce the execution time
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    { $match: { gender: "Male", age: { $lt: 30 } } },
+    // Stage-2
+    { $addFields: { course: "Level-2", eduTech: "Programming Hero" } },
+    // Stage-3
+    { $project: { course: 1, eduTech: 1 } },
+    // Stage-4
+    { $out: "course-students" },
+])
+    -> $match is same as find
+    -> $addFields adds a new field but doesn't modify the original documents
+    -> $project is used for fill filtering. The filtered documents will be sent to the next stage. So in the next stage, only the specified fields in the $project stage will be available.
+    -> $out creates a new collection with the aggregation result. You just need to specify the name of the new collection.
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    { $match: { gender: "Male", age: { $lt: 30 } } },
+    // Stage-2
+    { $addFields: { course: "Level-2", eduTech: "Programming Hero" } },
+    // Stage-3
+    { $merge: "Practice_Task" },
+    // Stage-4
+    { $project: { course: 1, eduTech: 1 } }, 
+])
+    -> $merge modifies the original collection.
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    {
+        $group: {
+            _id: "$address.country",
+            count: { $sum: 1 }
+        }
+    } 
+])
+    -> $group will create groups of documents based on the given criteria. The criteria is written inside the _id: "$".
+    -> $sum is the accumulator operator, shows how many documents are under a certain group/criteria.
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    {
+        $group: { 
+        _id: "$address.country",
+        count: { $sum: 1 },
+        showName: { $push: "$name" }
+        }
+    } 
+])
+    -> $push is also another accumulator object which will show the name of the people from those countries. So it basically allows you to add a new field and you can name it whatever you want, which will contain a certain field (that you can specify) of all the documents that fall under the specified criteria.
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    {
+        $group: {
+            _id: "$address.country",
+            count: { $sum: 1 },
+            fullDoc: { $push: "$$ROOT" }
+        }
+    },
+    // Stage-2
+    {
+        $project: {
+            "fullDoc.name": 1,
+            "fullDoc.email": 1,
+            "fullDoc.phone": 1
+        }
+    }
+])
+    -> $$ROOT gives the full document of those people. To make it easier for you to compare with the previous example, in the previous example we showed the "name" field of each documents' name for each member of each group. This time we're getting the whole document for each member of each group using $$ROOT.
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    {
+        $group: {
+            _id: null,
+            totalSalary: { $sum: "$salary" },
+            maxSalary: { $max: "$salary" },
+            minSalary: { $min: "$salary" },
+            avgSalary: { $avg: "$salary" }
+        }
+    },
+    // Stage-2
+    {
+        $project: {
+            total: "$totalSalary",
+            maximumSalary: "$maxSalary",
+            minimumSalary: "$minSalary",
+            averageSalary: "$avgSalary",
+            max_min_difference: { $subtract: ["$maxSalary", "$minSalary"] }
+        }
+    }
+])
+    -> $group: { _id: null } makes all the documents of the whole collection to be considered as a single document under a single group
+    -> { $sum: "$salary" } is a accumulator which sums up all the salaries of all employees for this example
+    -> { $max: "$salary" }, { $min: "$salary" } and { $avg: "$salary" } calculates maximum, minimum and average salaries respectively
+    -> maximumSalary: "$maxSalary", setting new names while projecting
+    -> $subtract: ["$maxSalary", "$minSalary"], subtracting minSalary from maxSalary
+
+
+
+db.Practice_Task.aggregate([
+    // stage-1
+    { $unwind: "$friends" },
+    // stage-2
+    { $group: { _id: "$friends", count: { $sum: 1 } } }
+])
+    -> $unwind breaks friends array and makes a document for each of the elements of the friends array for each document
+    -> $group then counts the total number of how many time a certain friend is used in the whole collection, means it makes distinct groups for each of the elements of the friends array even if it has been repeated in another document.
+
+
+
+db.test.aggregate([
+    // stage-1
+    {
+        $unwind: "$interests"
+    },
+    // stage-2
+    {
+        $group: { _id: "$age", interestPerAge: { $push: "$interests" } }
+    }
+])    
+
+
+
+db.Practice_Task.aggregate([
+    // Stage-1
+    {
+        $bucket: {
+            groupBy: "$age",
+            boundaries: [0, 20, 40, 60, 80],
+            default: "Older than 80 years old",
+            output: {
+                count: { $sum: 1 },
+                name: { $push: "$$ROOT" }
+            }
+        }
+    },
+    // Stage-2
+    {
+        $sort: { count: -1 }
+    },
+    {
+        $limit: 2
+    },
+    // Stage-4
+    {
+        $project: { count: 1 }
+
+    }
+])
+
+    -> $bucket making group on ages, ranging between 20, 40, 60, 80 and rest of the other values.
+    -> $sort will sort the documents in descending order
+    -> { $limit: 2 } will only give you 2 documents
+
+
+
+db.Practice_Task.aggregate([
+    {
+        $facet: {
+            // Pipeline-1
+            friendsCount: [
+                // Stage-1
+                { $unwind: "$friends" },
+                // Stage-2
+                { $group: { _id: "$friends", count: { $sum: 1 } } }
+            ],
+            // Pipeline-2
+            educationCount: [
+                // Stage-1
+                { $unwind: "$education" },
+                // Stage-2
+                { $group: { _id: "$education", count: { $sum: 1 } } }
+            ],
+            // Pipeline-3
+            skillsCount: [
+                // Stage-1
+                { $unwind: "$skills" },
+                // Stage-2
+                { $group: { _id: "$skills", count: { $sum: 1 } } }
+            ]
+        }
+    }
+])
+    -> $facet merges multiple Pipelines
+    -> Output from each pipeline is independent, which means the output doesn't depend on the previous pipelines
+
+
+
+db.orders.aggregate([
+    {
+        $lookup: {
+            from: "Practice_Task",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user"
+        }
+    }
+])
+    -> $lookup, from - collection from which refered to local collection. localField - property we will use to search. foreignField - local property's property name in the other collection. as - name the whole document
+
+
+
+db.test.find({ _id: ObjectId("6406ad63fc13ae5a40000065") }).explain("executionStats")
+    -> When you execute a query in MongoDB, the database engine decides how to execute it based on the query plan. The explain() method with the argument "executionStats" instructs MongoDB to return detailed execution statistics for the query, including information about the query plan, the execution time, the number of documents examined, and other relevant metrics.
+ 
+
+
+(note that, the collection name below, (massive-data) includes a hyphen "-". To work with this types of collection which includes hyphen or space, we use .getCollection() instead of directly writing db.massive-data. It won't work that way)
+
+
+
+db.getCollection("massive-data").createIndex({ email: 1 })
+    -> creating index to reduce execution time
+
+
+
+db.getCollection("massive-data").createIndex({ gender: -1, age: 1 })
+    -> creating index on multiple fields (gender (in descending order, -1 means descending) and age (in ascending order))
+    -> It's called compound index
+
+
+db.getCollection("massive-data").dropIndex({ email: 1 })
+    -> delete indexing
+
+
+
+db.getCollection("massive-data").createIndex({ about: "text" })
+    -> creating text index on "about" field
+
+
+
+db.getCollection("massive-data").find({ $text: { $search: "dolor" } }).project({ about: 1 })
+    -> searching using text index to reduce execution time. 
+    -> $text indicates that "text" indexing is being used here
+    -> $search is used to search the specific text using the text index
+    -> We created a text indexing on "about" field and it's searching for all the documents that has the word "dolor" in "about" field.

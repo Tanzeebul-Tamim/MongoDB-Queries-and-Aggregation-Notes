@@ -1,5 +1,7 @@
 "MONGODB QUERIES"
-Notes are enclosed within a first bracket after the queries
+Notes are enclosed within first brackets after the queries
+
+
 
 1. db.test.find({ gender: "Male" }).project({ name: 1, gender: 1, email: 1 })
 (It is called fill filtering)
