@@ -15,7 +15,7 @@ The repository includes:
 ## How to Use
 Each file is structured with comments to explain the purpose and usage of each MongoDB operation. You can refer to these notes while working on MongoDB projects or preparing for interviews.
 
-## Clone the repository:
+## Clone the Repository:
 
 ```sh
 git clone https://github.com/Tanzeebul-Tamim/MongoDB-Queries-and-Aggregation-Notes.git
