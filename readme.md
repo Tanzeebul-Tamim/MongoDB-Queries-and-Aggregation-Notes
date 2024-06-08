@@ -17,6 +17,8 @@ Each file is structured with comments to explain the purpose and usage of each M
 
 ## Clone the Repository:
 
+To clone this repository to your local machine, use the following command:
+
 ```sh
 git clone https://github.com/Tanzeebul-Tamim/MongoDB-Queries-and-Aggregation-Notes.git
 ```
